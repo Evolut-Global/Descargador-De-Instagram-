@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Downloader Pro</title>
+
+<style>
+:root{
+    --bg:#0f0f0f;
+    --card:#171717;
+    --text:#ffffff;
+    --input:#222;
+    --border:#333;
+}
+
+body.light{
+    --bg:#f3f3f3;
+    --card:#ffffff;
+    --text:#111;
+    --input:#ececec;
+    --border:#d6d6d6;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    transition:.3s;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:520px;
+    background:var(--card);
+    border-radius:25px;
+    padding:25px;
+    box-shadow:0 0 30px rgba(0,0,0,.25);
+    transition:.3s;
+}
+
+.top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.title{
+    font-size:28px;
+    font-weight:bold;
+}
+
+.themeBtn{
+    width:45px;
+    height:45px;
+    border:none;
+    border-radius:50%;
+    cursor:pointer;
+    background:var(--input);
+    color:var(--text);
+    font-size:18px;
+}
+
+.desc{
+    color:gray;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    background:var(--input);
+    color:var(--text);
+    outline:none;
+    margin-bottom:15px;
+}
+
+.detect{
+    margin-bottom:15px;
+    font-size:14px;
+    color:#00ffaa;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:15px;
+    background:linear-gradient(45deg,#00b7ff,#00ffaa);
+    color:black;
+}
+
+button:hover{
+    opacity:.9;
+}
+
+.loader{
+    display:none;
+    text-align:center;
+    margin-top:20px;
+}
+
+.result{
+    display:none;
+    margin-top:25px;
+}
+
+video{
+    width:100%;
+    border-radius:18px;
+}
+
+.info{
+    margin-top:15px;
+    background:var(--input);
+    border-radius:18px;
+    padding:15px;
+}
+
+.info p{
+    margin:8px 0;
+}
+
+.downloadBtn{
+    margin-top:15px;
+    display:block;
+    text-align:center;
+    background:#00ffaa;
+    color:black;
+    text-decoration:none;
+    padding:14px;
+    border-radius:14px;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top">
+        <div class="title">📥 Downloader Pro</div>
+
+        <button class="themeBtn" onclick="toggleTheme()">
+            🌙
+        </button>
+    </div>
+
+    <div class="desc">
+        Descarga videos de Instagram, Facebook y TikTok
+    </div>
+
+    <input type="text" id="url" placeholder="Pega un enlace...">
+
+    <div class="detect" id="detect">
+        Plataforma: —
+    </div>
+
+    <button onclick="downloadMedia()">
+        Descargar
+    </button>
+
+    <div class="loader" id="loader">
+        ⏳ Procesando...
+    </div>
+
+    <div class="result" id="result">
+
+        <video id="video" controls></video>
+
+        <div class="info" id="info"></div>
+
+        <a id="downloadBtn" class="downloadBtn" download>
+            ⬇ Descargar Video
+        </a>
+
+    </div>
+
+</div>
+
+<script>
+
+const encoded = 'ZWt1c2Fz'
+
+function getKey(){
+    return atob(encoded)
+    .split('')
+    .reverse()
+    .join('')
+}
+
+function detectPlatform(url){
+
+    if(url.includes('instagram.com')){
+        return 'instagram'
+    }
+
+    if(url.includes('facebook.com') || url.includes('fb.watch')){
+        return 'facebook'
+    }
+
+    if(url.includes('tiktok.com')){
+        return 'tiktok'
+    }
+
+    return null
+}
+
+document.getElementById('url').addEventListener('input', e => {
+
+    const platform = detectPlatform(e.target.value)
+
+    const detect = document.getElementById('detect')
+
+    if(platform){
+        detect.innerHTML = `✅ Plataforma detectada: ${platform}`
+    }else{
+        detect.innerHTML = 'Plataforma: —'
+    }
+
+})
+
+async function downloadMedia(){
+
+    const url = document.getElementById('url').value.trim()
+
+    if(!url){
+        alert('Ingresa un enlace')
+        return
+    }
+
+    const platform = detectPlatform(url)
+
+    if(!platform){
+        alert('No se detectó una plataforma válida')
+        return
+    }
+
+    const loader = document.getElementById('loader')
+    const result = document.getElementById('result')
+    const video = document.getElementById('video')
+    const info = document.getElementById('info')
+    const downloadBtn = document.getElementById('downloadBtn')
+
+    loader.style.display = 'block'
+    result.style.display = 'none'
+
+    try{
+
+        const endpoint =
+        `https://api.evogb.org/dl/${platform}?url=${encodeURIComponent(url)}&key=${getKey()}`
+
+        const response = await fetch(endpoint)
+
+        const data = await response.json()
+
+        let downloadUrl = ''
+        let title = ''
+        let author = 'Desconocido'
+        let duration = 'No disponible'
+        let quality = 'HD'
+        let size = 'Desconocido'
+
+        if(platform === 'instagram'){
+            downloadUrl = data.data[0].url
+            title = 'Instagram Reel'
+        }
+
+        else if(platform === 'facebook'){
+            downloadUrl = data.resultados[0].url
+            title = 'Facebook Video'
+        }
+
+        else if(platform === 'tiktok'){
+            downloadUrl = data.data.dl
+            title = data.data.title || 'TikTok Video'
+            author = data.data.author || 'Desconocido'
+        }
+
+        if(!downloadUrl){
+            alert('No se encontró el video')
+            loader.style.display = 'none'
+            return
+        }
+
+        video.src = downloadUrl
+        downloadBtn.href = downloadUrl
+
+        info.innerHTML = `
+            <h3>${title}</h3>
+            <p>👤 Autor: ${author}</p>
+            <p>⏱️ Duración: ${duration}</p>
+            <p>🎬 Calidad: ${quality}</p>
+            <p>📦 Tamaño: ${size}</p>
+            <p>🌐 Plataforma: ${platform}</p>
+        `
+
+        result.style.display = 'block'
+
+    }catch(err){
+        console.error(err)
+        alert('Ocurrió un error')
+    }
+
+    loader.style.display = 'none'
+}
+
+function toggleTheme(){
+    document.body.classList.toggle('light')
+
+    const btn = document.querySelector('.themeBtn')
+
+    if(document.body.classList.contains('light')){
+        btn.innerHTML = '☀️'
+    }else{
+        btn.innerHTML = '🌙'
+    }
+}
+</script>
+
+</body>
+</html>
